@@ -8,7 +8,7 @@ def getMatches(pattern:str, text:str):
         else:
             lst2 = []
             for e in lst:
-                lst2.append([e])
+                lst2.append((e,))
             return lst2
     return lst
 
