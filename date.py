@@ -27,6 +27,8 @@ class Date:
     def toString(self, format:str='%Y-%m-%d') -> str:
         return self.date.strftime(format)
 
+    def toDatetimeString(self, format:str='%Y-%m-%d %H:%M:%S') -> str:
+        return self.date.strftime(format)
 
 def mapMonthFromNumber(num:int, upperCase:bool=None, language:str='pt') -> str:
     if language == 'pt':
