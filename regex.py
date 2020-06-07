@@ -18,7 +18,7 @@ class Regex:
         return lst
 
     def getValue(self, text:str, i:int=0):
-        match = re.match(self.pattern, text)
+        match = re.search(self.pattern, text)
         if match is not None:
             try:
                 return match[i]
