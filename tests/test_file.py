@@ -23,3 +23,8 @@ def test_file():
     f = File('test.txt')
     assert f.read() == 'test text!\ntest text2!'
     assert f.isClose() == True
+
+
+
+if __name__ == '__main__':
+    test_file()

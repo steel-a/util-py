@@ -29,3 +29,5 @@ def test_regex():
     assert r1.getValue('aaaaaaaaaaa') is None
 
 
+if __name__ == '__main__':
+    test_regex()

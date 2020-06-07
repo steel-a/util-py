@@ -22,3 +22,7 @@ def test_toFloat():
     assert numbers.toFloat('1.0') == 1.0
     assert numbers.toFloat('1,11') == 1.11
     assert numbers.toFloat('1.01') == 1.01
+
+
+if __name__ == '__main__':
+    test_toFloat()

@@ -8,5 +8,10 @@ def test_config():
     f.close()
 
     c = Config('test.ini')
-    assert c.config['connectionString'] == 'Server=localhost;Port=3306;Database=test;Uid=root;Pwd=49rjfdklfkdfj#(*$*(%&$*%)%*$&@)(%(#)#&&@&!*~);'
-    assert c.config['connectionString2'] == 'fsojojdojsojsoijsfijfs=dsfsfssffs='
+    assert c.item['connectionString'] == 'Server=localhost;Port=3306;Database=test;Uid=root;Pwd=49rjfdklfkdfj#(*$*(%&$*%)%*$&@)(%(#)#&&@&!*~);'
+    assert c.item['connectionString2'] == 'fsojojdojsojsoijsfijfs=dsfsfssffs='
+
+
+
+if __name__ == '__main__':
+    test_config()
