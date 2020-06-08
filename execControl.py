@@ -2,25 +2,35 @@ import dbpy.db_mysql as database
 from dbpy.db_mysql import f
 from datetime import datetime
 import re
+from utilpy.date import Date
 
 class ExecControl:
     """
     -> Use instructions:
         Call getProcessToExec: load a candidate to be executed 
-        and try to start. If it can't start, it will load another 
-        process. It loads values to self.* variables
-    ->      if True, process
-    ->      if success, call updateSuccess function
-    ->      if error, call updateError function
+        Call start: try to checkout the candidate updating status to 'P' and verify return
+            if True, process
+            if success, call updateSuccess function
+            if error, call updateError function
     """
 
-    def __init__(self, conStr:str, table:str, idUser:int):
+    def __init__(self, conStr:str, table:str):
         self.table = table
         self.db = database.DB(conStr)
-        self.idUser = idUser
 
 
-    def getProcessToExec(self) -> bool:
+    def __enter__(self):
+        return self
+
+
+    def __exit__(self, type, value, tb):
+        if tb is None:
+            self.endSuccess()
+        else:
+            self.endError(value)
+
+
+    def getProcessToExec(self, processName:str=None) -> bool:
         """
         -> loads a candidate to be executed and try to start.
             If it can't start, it will load another process.
@@ -28,31 +38,66 @@ class ExecControl:
         :return: True if load a candidate
                  False if does not have a candidate to load or error
         """
-        started = False
-        while not started:
-            if self.__loadCandidate() == False:
-                return False
-            started = self.__start()
-
-
-    def __loadCandidate(self) -> bool:
         hourMin = re.search(' ([0-9]{2}:[0-9]{2}):[0-9]{2}',
                             datetime.now().strftime('%Y-%m-%d %H:%M:%S'))[1]
-        queryCandidate = f"""
-            select *
-              from {self.table}
-             where statusLastExecution != 'P'
-               and (hourStart <= '{hourMin}' or
-                    hourStart2 <= '{hourMin}')
-               and hourEnd >= '{hourMin}'
-               and triesWithError < maxTriesWithError
-               and periodicity = 'D' """
+
+        if processName is None:
+            queryCandidate = f"""
+                select *
+                from {self.table}
+                where
+                (statusLastExecution != 'S'
+                    and (hourStart <= '{hourMin}' or hourStart2 <= '{hourMin}')
+                    and     hourEnd >= '{hourMin}'
+                ) or
+                (statusLastExecution = 'E')
+                """
+        else:
+            queryCandidate = f"""
+                select * from {self.table} where statusLastExecution != 'P'
+                and processName = '{processName}'
+                """
 
         dic = self.db.getRowDic(queryCandidate)
         if dic is None:
             return False
 
+        # Rules to not execute
+        if processName==None:
+            p = dic['periodicity']
+            dtSuccess = Date(dic['dateLastSuccess'])
+            dtExec = Date(dic['timeLastExecution'])
+            today = Date()
+            minSinceSuccess = round((today.date-dtSuccess.date).seconds/60)
+            minSinceExec = round((today.date-dtExec.date).seconds/60)
+            repeat = dic['repeatMinutes']
+            status = dic['statusLastExecution']
+            dayWeek = today.date.weekday()+1
+            businessDay = (dayWeek <= 5)
+            executedToday = (today.toString() == dtSuccess.toString())
+            day = dic['day']
+            tries = dic['triesWithError']
+            maxTries = dic['maxTriesWithError']
+            minsAfterTries = dic['minsAfterMaxTries']
+
+            # Repeat = 0 -> execute once a day      # Repeat > 0 -> exec even x minutes
+            if((repeat == 0 and executedToday) or (repeat > 0 and (minSinceSuccess < repeat))):
+                return False
+
+            # Periodicity criteria
+            elif status == 'S':
+                if ((p=='B' and not businessDay)
+                 or (p=='W' and day != dayWeek)
+                 or (p=='M' and day != today.date.day)
+                ):
+                    return False
+
+            # After maxTries, exec every 30 minutes
+            elif status == 'E' and tries >= maxTries and minSinceExec <= minsAfterTries:
+                return False
+
         self.id = dic['id']
+        self.processName = dic['processName']
         self.idUser = dic['idUser']
         self.periodicity = dic['periodicity']
         self.day = dic['day']
@@ -62,8 +107,10 @@ class ExecControl:
         self.repeatMinutes = dic['repeatMinutes']
         self.dateLastSuccess = dic['dateLastSuccess']
         self.statusLastExecution = dic['statusLastExecution']
+        self.timeLastExecution = dic['timeLastExecution']
         self.triesWithError = dic['triesWithError']
         self.maxTriesWithError = dic['maxTriesWithError']
+        self.minsAfterMaxTries = dic['minsAfterMaxTries']
         self.error = dic['error']
         self.numHardRegisters = dic['numHardRegisters']
         self.numHardRegistersLast = dic['numHardRegistersLast']
@@ -73,7 +120,7 @@ class ExecControl:
         return True
 
 
-    def __start(self):
+    def start(self):
         dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if self.db.exec(f"""
             update {self.table} set
@@ -87,7 +134,7 @@ class ExecControl:
         return False
 
 
-    def updateSuccess(self, numHardRegisters, numSoftRegisters):
+    def endSuccess(self, numHardRegisters:int=0, numSoftRegisters:int=0):
         self.statusLastExecution = 'S'
         self.triesWithError = 0
         self.error = ''
@@ -104,10 +151,11 @@ class ExecControl:
             ,   numHardRegistersLast = {self.numHardRegistersLast}
             where id = {self.id}
             """
+        self.db.reconnect()
         self.db.exec(mysql)
 
 
-    def updateError(self, errorMessage:str):
+    def endError(self, errorMessage:str):
         self.statusLastExecution = 'E'
         self.triesWithError+=1
         self.error = errorMessage
@@ -125,131 +173,8 @@ class ExecControl:
             ,   numHardRegistersLast = {self.numHardRegistersLast}
             where id = {self.id}
             """
+        self.db.reconnect()
         self.db.exec(mysql)
-
-
-    def _createNewRegister(self, processName:str):
-        self.processName = processName
-        self.periodicity = 'D'
-        self.day = 'null'
-        self.hourStart = '07:00'
-        self.hourStart2 = 'null'
-        self.hourEnd = '19:00'
-        self.repeatMinutes = 0
-        self.dateLastSuccess = 'null'
-        self.statusLastExecution = 'I'
-        self.timeLastExecution = 'null'
-        self.triesWithError = 0
-        self.maxTriesWithError = 3
-        self.error = 'null'
-        self.numHardRegisters = 0
-        self.numHardRegistersLast = 0
-        self.numSoftRegisters = 0
-        self.fk = 'null'
-
-        mysql = f"""
-            INSERT INTO {self.table}
-            (
-            `processName`,
-            `idUser`,
-            `periodicity`,
-            `day`,
-            `hourStart`,
-            `hourStart2`,
-            `hourEnd`,
-            `repeatMinutes`,
-            `dateLastSuccess`,
-            `statusLastExecution`,
-            `timeLastExecution`,
-            `triesWithError`,
-            `maxTriesWithError`,
-            `error`,
-            `numHardRegisters`,
-            `numHardRegistersLast`,
-            `numSoftRegisters`,
-            `fk`
-            )
-            VALUES
-            (
-            {f(self.processName)},
-            {f(self.idUser)},
-            {f(self.periodicity)},
-            {f(self.day)},
-            {f(self.hourStart)},
-            {f(self.hourStart2)},
-            {f(self.hourEnd)},
-            {f(self.repeatMinutes)},
-            {f(self.dateLastSuccess)},
-            {f(self.statusLastExecution)},
-            {f(self.timeLastExecution)},
-            {f(self.triesWithError)},
-            {f(self.maxTriesWithError)},
-            {f(self.error)},
-            {f(self.numHardRegisters)},
-            {f(self.numHardRegistersLast)},
-            {f(self.numSoftRegisters)},
-            {f(self.fk)}
-            );
-            """.replace('\n','')
-
-        self.db.exec(mysql)
-
-
-    def _dropTableCtrl(self):
-        self.db.exec(f"drop table if exists {self.table}")
-
-
-    def _createTableCtrl(self):
-        # Necessary table: getWebDataCtl
-        # ProcessName (str 30): Process Name
-        # Periodicity (str 1) H (Hourly), D (diary), W (weekly),
-        #          M (monthly),
-        #          B (business day diary but not saturday or sunday)
-        # Day (int): Day number - 1 (Monday) to 7 (Saturday)
-        #            for Weekly or month day number for M
-        # HourStart: Hour to first try
-        # HourStart2: Hour to first try
-        # HourEnd: Not to execute after this hour
-        # RepeatMinutes: After start in this day, repeat every x min
-        # DateLastSuccess (date): Last time exec result in Success
-        # StatusLastExecution (str 1): S, P, E
-        # TimeLastExecution (str 1): S, P, E
-        # TriesWithError: int
-        # MaxTriesWithError: int
-        # Error (str 1000): Last Error Message
-        # NumHardRegisters
-        # NumHardRegistersLast
-        # NumSoftRegisters
-
-        mysql =f"""
-        CREATE TABLE IF NOT EXISTS {self.table} (
-        `id` int(11) NOT NULL AUTO_INCREMENT,
-        `processName` varchar(50) DEFAULT NULL,
-        `idUser` int NOT NULL,
-        `periodicity` char(1) NOT NULL,
-        `day` tinyint(4) DEFAULT NULL,
-        `hourStart` char(5) NOT NULL,
-        `hourStart2` char(5),
-        `hourEnd` char(5) NOT NULL,
-        `repeatMinutes` tinyint(4) DEFAULT NULL,
-        `dateLastSuccess` datetime DEFAULT NULL,
-        `statusLastExecution` char(1) DEFAULT NULL,
-        `timeLastExecution` datetime DEFAULT NULL,
-        `triesWithError` tinyint(4) DEFAULT NULL,
-        `maxTriesWithError` tinyint(4) DEFAULT NULL,
-        `error` varchar(1000) DEFAULT NULL,
-        `numHardRegisters` int(11) DEFAULT NULL,
-        `numHardRegistersLast` int(11) DEFAULT NULL,
-        `numSoftRegisters` int(11) DEFAULT NULL,
-        `fk` varchar(50) DEFAULT NULL,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `getWebDataCtl_unique_index` (`processName`
-                                                ,`periodicity`
-                                                ,`day`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-        """
-        self.db.exec(mysql)
-
 
 
 
