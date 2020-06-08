@@ -7,21 +7,24 @@ class Date:
     :param timeFormat: time: %H=H24, %I=H12, %p=PM/AM or pm/am, %M=min, %S=sec
     """
 
-    def __init__(self, dt:str='now', language:str='pt', timeFormat:str=None):
-        if dt == 'now':  self.date = datetime.now()
-        elif dt == 'utc': self.date = datetime.utcnow()
-
-        if timeFormat is None: time = ''
-        else: time = ' '+timeFormat
-
-        if language=='pt':
-            if '/' in dt: self.date = datetime.strptime(dt, '%d/%m/%Y'+time)
-            elif '-' in dt: self.date = datetime.strptime(dt, '%d-%m-%Y'+time)
-        elif language=='en':
-            if '/' in dt: self.date = datetime.strptime(dt, '%m/%d/%Y'+time)
-            elif '-' in dt: self.date = datetime.strptime(dt, '%m-%d-%Y'+time)
+    def __init__(self, dt='now', language:str='pt', timeFormat:str=None):
+        if isinstance(dt, datetime):
+            self.date = dt
         else:
-            raise NotImplementedError(language+' is not implemented yet')        
+            if dt == 'now':  self.date = datetime.now()
+            elif dt == 'utc': self.date = datetime.utcnow()
+
+            if timeFormat is None: time = ''
+            else: time = ' '+timeFormat
+
+            if language=='pt':
+                if '/' in dt: self.date = datetime.strptime(dt, '%d/%m/%Y'+time)
+                elif '-' in dt: self.date = datetime.strptime(dt, '%d-%m-%Y'+time)
+            elif language=='en':
+                if '/' in dt: self.date = datetime.strptime(dt, '%m/%d/%Y'+time)
+                elif '-' in dt: self.date = datetime.strptime(dt, '%m-%d-%Y'+time)
+            else:
+                raise NotImplementedError(language+' is not implemented yet')        
 
 
     def toString(self, format:str='%Y-%m-%d') -> str:
