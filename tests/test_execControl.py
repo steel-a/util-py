@@ -10,8 +10,9 @@ class ExecControlTest:
         self.db = database.DB(conStr)
 
 
-    def _createNewRegister(self, processName:str, idUser:int):
+    def _createNewRegister(self, processName:str, processParam:str, idUser:int):
         self.processName = processName
+        self.processParam = processParam
         self.idUser = idUser
         self.periodicity = 'D'
         self.day = 'null'
@@ -35,6 +36,7 @@ class ExecControlTest:
             INSERT INTO {self.table}
             (
             `processName`,
+            `processParam`,
             `idUser`,
             `periodicity`,
             `day`,
@@ -57,6 +59,7 @@ class ExecControlTest:
             VALUES
             (
             {f(self.processName)},
+            {f(self.processParam)},
             {f(self.idUser)},
             {f(self.periodicity)},
             {f(self.day)},
@@ -87,7 +90,8 @@ class ExecControlTest:
 
     def _createTableCtrl(self):
         # Necessary table: getWebDataCtl
-        # ProcessName (str 30): Process Name
+        # ProcessName (str 50): Process Name
+        # ProcessParam (str 10): Process Param
         # Periodicity (str 1) D (diary), W (weekly), M (monthly),
         #          B (business day diary but not saturday or sunday)
         # Day (int): Day number - 1 (Monday) to 7 (Sunsay)
@@ -111,6 +115,7 @@ class ExecControlTest:
         CREATE TABLE IF NOT EXISTS {self.table} (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `processName` varchar(50) DEFAULT NULL,
+        `processParam` varchar(10) DEFAULT NULL,
         `idUser` int NOT NULL,
         `periodicity` char(1) NOT NULL,
         `day` tinyint(4) DEFAULT NULL,
@@ -130,7 +135,9 @@ class ExecControlTest:
         `numSoftRegisters` int(11) DEFAULT NULL,
         `fk` varchar(50) DEFAULT NULL,
         PRIMARY KEY (`id`),
-        UNIQUE KEY `getWebDataCtl_unique_index` (`processName`
+        UNIQUE KEY `{self.table}_unique_index`  (`processName`
+                                                ,`processParam`
+                                                ,`idUser`
                                                 ,`periodicity`
                                                 ,`day`)
         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -141,17 +148,19 @@ class ExecControlTest:
 def test_execControl():
     table = 'control'
     processName = 'getTemplate'
+    processParam = 'par'
     
     ect = ExecControlTest(getConnStr(), table)
     ec = ExecControl(getConnStr(), table)
 
     ect._dropTableCtrl()
     ect._createTableCtrl()
-    ect._createNewRegister(processName,1)
+    ect._createNewRegister(processName, processParam,1)
 
     assert ec.getProcessToExec() != False
     assert ec.start() == True
     assert ec.processName == processName
+    assert ec.processParam == processParam
     assert ec.id == 1
     assert ec.statusLastExecution == 'P'
     assert ec.triesWithError == 0
