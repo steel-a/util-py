@@ -58,7 +58,7 @@ class ExecControl:
                 and processName = '{processName}'
                 """
 
-        dic = self.db.getRowDic(queryCandidate)
+        dic = self.db.getRow(queryCandidate)
         if dic is None:
             return False
 
@@ -98,6 +98,7 @@ class ExecControl:
 
         self.id = dic['id']
         self.processName = dic['processName']
+        self.processParam = dic['processParam']
         self.idUser = dic['idUser']
         self.periodicity = dic['periodicity']
         self.day = dic['day']
