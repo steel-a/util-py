@@ -5,10 +5,9 @@ from utilpy.tests.test_file import test_file
 from utilpy.tests.test_config import test_config
 from utilpy.tests.test_execControl import test_execControl
 
-if __name__ == '__main__':
-    test_toFloat()
-    test_regex()
-    test_date()
-    test_file()
-    test_config()
-    test_execControl()
+test_toFloat()
+test_regex()
+test_date()
+test_file()
+test_config()
+test_execControl()

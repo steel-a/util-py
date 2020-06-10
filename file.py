@@ -59,3 +59,8 @@ class File:
         lst = self.file.readlines()
         self.close()
         return lst
+
+    def remove(self):
+        self.close()
+        if self.fileName is not None:
+            os.remove(self.fileName)

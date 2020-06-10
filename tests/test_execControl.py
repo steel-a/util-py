@@ -1,7 +1,7 @@
 from utilpy.execControl import ExecControl
 import dbpy.db_mysql as database
 from dbpy.db_mysql import f
-from utilpy.tests.data import getConnStr
+from utilpy.config import Config
 
 class ExecControlTest:
 
@@ -150,8 +150,9 @@ def test_execControl():
     processName = 'getTemplate'
     processParam = 'par'
     
-    ect = ExecControlTest(getConnStr(), table)
-    ec = ExecControl(getConnStr(), table)
+    connStr = Config('keys_test.ini').item['connectionStringTest']
+    ect = ExecControlTest(connStr, table)
+    ec = ExecControl(connStr, table)
 
     ect._dropTableCtrl()
     ect._createTableCtrl()

@@ -24,6 +24,10 @@ def test_file():
     assert f.read() == 'test text!\ntest text2!'
     assert f.isClose() == True
 
+    f.remove()
+    assert f.exists('test.txt') == False
+
+
 
 
 if __name__ == '__main__':

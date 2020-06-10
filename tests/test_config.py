@@ -11,7 +11,7 @@ def test_config():
     assert c.item['connectionString'] == 'Server=localhost;Port=3306;Database=test;Uid=root;Pwd=49rjfdklfkdfj#(*$*(%&$*%)%*$&@)(%(#)#&&@&!*~);'
     assert c.item['connectionString2'] == 'fsojojdojsojsoijsfijfs=dsfsfssffs='
 
-
+    File('test.ini').remove()
 
 if __name__ == '__main__':
     test_config()
