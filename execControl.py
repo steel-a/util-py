@@ -58,68 +58,70 @@ class ExecControl:
                 and processName = '{processName}'
                 """
 
-        dic = self.db.getRow(queryCandidate)
-        if dic is None:
-            return False
 
-        # Rules to not execute
-        if processName==None:
-            p = dic['periodicity']
-            dtSuccess = Date(dic['dateLastSuccess'])
-            dtExec = Date(dic['timeLastExecution'])
-            today = Date()
-            minSinceSuccess = round((today.date-dtSuccess.date).seconds/60)
-            minSinceExec = round((today.date-dtExec.date).seconds/60)
-            repeat = dic['repeatMinutes']
-            status = dic['statusLastExecution']
-            dayWeek = today.date.weekday()+1
-            businessDay = (dayWeek <= 5)
-            executedToday = (today.toString() == dtSuccess.toString())
-            day = dic['day']
-            tries = dic['triesWithError']
-            maxTries = dic['maxTriesWithError']
-            minsAfterTries = dic['minsAfterMaxTries']
-
-            # Repeat = 0 -> execute once a day      # Repeat > 0 -> exec even x minutes
-            if((repeat == 0 and executedToday) or (repeat > 0 and (minSinceSuccess < repeat))):
+        for dic in self.db.getListRows(queryCandidate):
+            if dic is None:
                 return False
 
-            # Periodicity criteria
-            elif status == 'S':
-                if ((p=='B' and not businessDay)
-                 or (p=='W' and day != dayWeek)
-                 or (p=='M' and day != today.date.day)
-                ):
-                    return False
+            # Rules to not execute
+            if processName==None:
+                p = dic['periodicity']
+                dtSuccess = Date(dic['dateLastSuccess'])
+                dtExec = Date(dic['timeLastExecution'])
+                today = Date()
+                minSinceSuccess = round((today.date-dtSuccess.date).seconds/60)
+                minSinceExec = round((today.date-dtExec.date).seconds/60)
+                repeat = dic['repeatMinutes']
+                status = dic['statusLastExecution']
+                dayWeek = today.date.weekday()+1
+                businessDay = (dayWeek <= 5)
+                executedToday = (today.toString() == dtSuccess.toString())
+                day = dic['day']
+                tries = dic['triesWithError']
+                maxTries = dic['maxTriesWithError']
+                minsAfterTries = dic['minsAfterMaxTries']
 
-            # After maxTries, exec every 30 minutes
-            elif status == 'E' and tries >= maxTries and minSinceExec <= minsAfterTries:
-                return False
+                # Repeat = 0 -> execute once a day      # Repeat > 0 -> exec even x minutes
+                if((repeat == 0 and executedToday) or (repeat > 0 and (minSinceSuccess < repeat))):
+                    continue
 
-        self.id = dic['id']
-        self.processName = dic['processName']
-        self.processParam = dic['processParam']
-        self.idUser = dic['idUser']
-        self.periodicity = dic['periodicity']
-        self.day = dic['day']
-        self.hourStart = dic['hourStart']
-        self.hourStart2 = dic['hourStart2']
-        self.hourEnd = dic['hourEnd']
-        self.repeatMinutes = dic['repeatMinutes']
-        self.dateLastSuccess = dic['dateLastSuccess']
-        self.statusLastExecution = dic['statusLastExecution']
-        self.timeLastExecution = dic['timeLastExecution']
-        self.triesWithError = dic['triesWithError']
-        self.maxTriesWithError = dic['maxTriesWithError']
-        self.minsAfterMaxTries = dic['minsAfterMaxTries']
-        self.error = dic['error']
-        self.numHardRegisters = dic['numHardRegisters']
-        self.numHardRegistersLast = dic['numHardRegistersLast']
-        self.numSoftRegisters = dic['numSoftRegisters']
-        self.fk = dic['fk']
+                # Periodicity criteria
+                elif status == 'S':
+                    if ((p=='B' and not businessDay)
+                    or (p=='W' and day != dayWeek)
+                    or (p=='M' and day != today.date.day)
+                    ):
+                        continue
 
-        return True
+                # After maxTries, exec every 30 minutes
+                elif status == 'E' and tries >= maxTries and minSinceExec <= minsAfterTries:
+                    continue
 
+            self.id = dic['id']
+            self.processName = dic['processName']
+            self.processParam = dic['processParam']
+            self.idUser = dic['idUser']
+            self.periodicity = dic['periodicity']
+            self.day = dic['day']
+            self.hourStart = dic['hourStart']
+            self.hourStart2 = dic['hourStart2']
+            self.hourEnd = dic['hourEnd']
+            self.repeatMinutes = dic['repeatMinutes']
+            self.dateLastSuccess = dic['dateLastSuccess']
+            self.statusLastExecution = dic['statusLastExecution']
+            self.timeLastExecution = dic['timeLastExecution']
+            self.triesWithError = dic['triesWithError']
+            self.maxTriesWithError = dic['maxTriesWithError']
+            self.minsAfterMaxTries = dic['minsAfterMaxTries']
+            self.error = dic['error']
+            self.numHardRegisters = dic['numHardRegisters']
+            self.numHardRegistersLast = dic['numHardRegistersLast']
+            self.numSoftRegisters = dic['numSoftRegisters']
+            self.fk = dic['fk']
+
+            return True
+
+        return False
 
     def start(self):
         dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -156,10 +158,10 @@ class ExecControl:
         self.db.exec(mysql)
 
 
-    def endError(self, errorMessage:str):
+    def endError(self, errorMessage):
         self.statusLastExecution = 'E'
         self.triesWithError+=1
-        self.error = errorMessage
+        self.error = str(errorMessage).replace("'","")
         self.numHardRegistersLast = self.numHardRegisters
         self.numHardRegisters = 0
         self.numSoftRegisters = 0
