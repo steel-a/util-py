@@ -2,6 +2,15 @@ from utilpy.file import File
 
 def test_file():
 
+    try: File('notExist.txt').read()
+    except: pass
+    
+    f = File('I tried to open the file [notExist.txt] here.txt')
+    assert f.exists() == True
+    f.remove()
+    assert f.exists() == False
+
+
     f = File('test.txt')
     f.write('test text!\ntest text2!')
     assert f.isClose() == False

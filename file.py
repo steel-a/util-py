@@ -19,8 +19,10 @@ class File:
             self.mode = atr
             self.file = open(self.fileName, self.mode)
         except:
-            self.file.open(f'I tried to open the file {fileName} here.txt','w+')
+            fileName = fileName.replace('/','^').replace('\\','^').replace(':','^')
+            self.file = open(f'I tried to open the file [{fileName}] here.txt','w')
             self.file.close()
+            raise Exception(f'File {fileName} could not be openned.')
             
 
     def close(self):
