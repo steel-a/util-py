@@ -53,6 +53,22 @@ class Vault:
         res = self.cursor.fetchone()
         return res
 
-    
+    def getAll(self):
+        self.cursor.execute(f"""
+            select key, username, password from vault
+        """)
+
+        if self.cursor.rowcount == 0:
+            return None
+
+        res = self.cursor.fetchall()
+        return res
+
+    def delete(self, key:str):
+        return self.cursor.execute(f"""
+            delete from vault
+            where key = '{key}'
+        """)
+
     def close(self):
         self.conn.close()

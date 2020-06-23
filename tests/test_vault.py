@@ -15,6 +15,9 @@ def test_vault():
     assert (k[0] == 'a3' and k[1] == 'a4')
     k = v.get('c')
     assert k == None
+    v.delete('a')
+    k = v.get('a')
+    assert k == None
 
     f.remove()
 

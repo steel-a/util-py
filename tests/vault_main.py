@@ -3,9 +3,11 @@ from utilpy.vault import Vault
 
 def menu():
     print("______________________________")
-    print("| d: create or open database |")
-    print("| i: insert a new register   |")
+    print("| o: create or open database |")
+    print("| i: insert/update a register|")
     print("| g: get a register          |")
+    print("| l: list registers          |")
+    print("| d: delete a register       |")
     print("| x: exit ___________________|")
 
 v = None
@@ -14,11 +16,11 @@ shouldExit = False
 while not shouldExit:
     menu()
     op = input('\nChoose an option: ')
-    if op not in ['d','i','g','x']:
+    if op not in ['o','i','g','l','d','x']:
         print ('Invalid option.')
         continue
 
-    if op == 'd':
+    if op == 'o':
         dbName = input('\nEnter a database path/name: ')
         v = Vault(dbName)
         continue
@@ -46,6 +48,25 @@ while not shouldExit:
         print(f'Username: [{k[0]}], Password: [{k[1]}]')
         continue
 
+    if op == 'l':
+        if v == None:
+            print('Please, create a new database first!')
+            continue
+        for k in v.getAll():
+            print(f'Key: [{k[0]}], Username: [{k[1]}], Password: [{k[2]}]')
+        continue
+
+    if op == 'd':
+        if v == None:
+            print('Please, create a new database first!')
+            continue
+        key = input('Please, enter the key value: ')
+        print(f'Rows deleted: [{v.delete(key)}]')
+        continue
+
     if op == 'x':
         shouldExit = True
-        v.close()
+        try:
+            v.close()
+        except: pass
+        
