@@ -8,7 +8,7 @@ def toFloat(value:str) -> float:
     ,'1000000000,76','1000000000,7','1,000,000,000','1.000.000.000','1000000000', '10', '1,1', '1.0', '1,11', '1.01'
     ,1,000,000,000.765','1000000000.765','1.000.000.000,765', '1000000000,765,'1,000.765','1000.765','1.000,765', '1000,765'
     """
-    value = value.replace('$','').replace('USD','').replace('US','').replace('BRL','').replace('BR','').replace('EUR','').replace('R','').strip()
+    value = value.replace('$','').replace('USD','').replace('US','').replace('BRL','').replace('BR','').replace('EUR','').replace('R','').replace(' ','')
     num_coma = value.count(',')
     num_dot = value.count('.')
 
