@@ -18,6 +18,10 @@ class Regex:
         return lst
 
     def getValue(self, text:str, i:int=0):
+        '''
+        Try match the text and return the occurrence i.
+        Return None if there's no match
+        '''
         match = re.search(self.pattern, text)
         if match is not None:
             try:
