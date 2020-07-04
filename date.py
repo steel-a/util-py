@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import date
 
 class Date:
     """
@@ -8,7 +9,7 @@ class Date:
     """
 
     def __init__(self, dt='now', language:str='pt', timeFormat:str=None):
-        if isinstance(dt, datetime):
+        if isinstance(dt, datetime) or isinstance(dt, date):
             self.date = dt
         else:
             if dt == 'now':  self.date = datetime.now()
