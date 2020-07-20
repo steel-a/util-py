@@ -44,6 +44,7 @@ class File:
             if(self.file is None):
                 self.open(self.fileName, "w")
             self.file.write(text)
+        return self
 
 
 
