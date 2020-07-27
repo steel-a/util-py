@@ -4,7 +4,7 @@ from datetime import date
 class Date:
     """
     :param dt: now or utc or string in format '%d/%m/%Y' (pt) or '%m/%d/%Y' (en)
-    :param language: 'pt' or 'en'
+    :param language: 'pt' or 'en', or a date format
     :param timeFormat: time: %H=H24, %I=H12, %p=PM/AM or pm/am, %M=min, %S=sec
     """
 
@@ -25,7 +25,7 @@ class Date:
                 if '/' in dt: self.date = datetime.strptime(dt, '%m/%d/%Y'+time)
                 elif '-' in dt: self.date = datetime.strptime(dt, '%m-%d-%Y'+time)
             else:
-                raise NotImplementedError(language+' is not implemented yet')        
+                self.date = datetime.strptime(dt, language+time)
 
 
     def toString(self, format:str='%Y-%m-%d') -> str:
