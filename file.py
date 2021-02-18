@@ -1,3 +1,4 @@
+from utilpy.date import Date
 import os
 
 class File:
@@ -67,3 +68,15 @@ class File:
         self.close()
         if self.fileName is not None:
             os.remove(self.fileName)
+
+def getFilename(sufix:str='.txt', datePrecision:str='day'):
+    
+    pattern = '%Y%m%d'
+    if datePrecision == 'year': pattern = '%Y'
+    elif datePrecision == 'month': pattern = '%Y%m'
+    elif datePrecision == 'hour': pattern = '%Y%m%d%H'
+    elif datePrecision == 'min': pattern = '%Y%m%d%H%M'
+    elif datePrecision == 'sec': pattern = '%Y%m%d%H%M%S'
+
+
+    return Date().toString(pattern) + ('' if sufix[0]=='.' else '_') + sufix
