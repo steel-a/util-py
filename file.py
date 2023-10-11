@@ -44,7 +44,7 @@ class File:
             
             if(self.file is None):
                 self.open(self.fileName, "w")
-            self.file.write(text)
+            self.file.write(str(text))
         return self
 
 
